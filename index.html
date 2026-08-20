@@ -407,14 +407,29 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Pada implementasi asli, ini adalah tempat Anda memanggil fetch()
-            // fetch('https://api-dashboard-owner.worker.dev/rekap')
-            //   .then(res => res.json())
-            //   .then(data => { renderGrandSummary(data); renderBranches(data); })
+            // Tampilkan tulisan Loading sementara data diambil
+            document.getElementById('grandOmsetHariIni').innerText = "Loading...";
+            document.getElementById('branchesContainer').innerHTML = '<p class="text-center text-gray-500 py-10">Mengambil data dari semua cabang...</p>';
+
+            // GANTI URL DI BAWAH INI DENGAN URL WORKER CLOUDFLARE ANDA YANG ASLI
+            const workerUrl = 'https://ownerdash.fafaritrit.workers.dev'; 
             
-            // Menggunakan Data Mock
-            renderGrandSummary(dashboardData);
-            renderBranches(dashboardData);
+            fetch(workerUrl)
+              .then(res => {
+                  if(!res.ok) throw new Error("Gagal terhubung ke server");
+                  return res.json();
+              })
+              .then(data => { 
+                  // Jika berhasil, render data asli
+                  renderGrandSummary(data); 
+                  renderBranches(data); 
+              })
+              .catch(err => {
+                  console.error("Error fetching data:", err);
+                  document.getElementById('branchesContainer').innerHTML = `<p class="text-center text-red-500 py-10">Terjadi kesalahan saat mengambil data: ${err.message}. Pastikan URL Worker sudah benar.</p>`;
+                  document.getElementById('grandOmsetHariIni').innerText = "Error";
+                  document.getElementById('grandOmsetBulanIni').innerText = "Error";
+              });
         });
 
     </script>
