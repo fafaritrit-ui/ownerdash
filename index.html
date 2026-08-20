@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,6 +78,14 @@
     </main>
 
     <script>
+
+        const themes = [
+        { headerBg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-800' },
+        { headerBg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-800' },
+        { headerBg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-600', badge: 'bg-amber-100 text-amber-800' },
+        { headerBg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', badge: 'bg-rose-100 text-rose-800' }
+    ];
+
         // --- UTILITAS ---
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -192,7 +202,8 @@
         function renderBranches(data) {
             const container = document.getElementById('branchesContainer');
             container.innerHTML = '';
-
+            const theme = themes[index % themes.length];
+            
             data.cabang.forEach((cabang, index) => {
                 const totalPembayaranHari = cabang.hariIni.pembayaran.cash + cabang.hariIni.pembayaran.qris + cabang.hariIni.pembayaran.transfer;
                 const pctCash = totalPembayaranHari > 0 ? ((cabang.hariIni.pembayaran.cash / totalPembayaranHari) * 100).toFixed(1) : 0;
