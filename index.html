@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard - Multi Branch POS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <nav class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chart-line text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight">Owner Central</span>
+                </div>
+                <div class="flex items-center gap-4 text-sm font-medium">
+                    <div class="bg-indigo-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="currentTime">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Ringkasan Keseluruhan (Semua Cabang)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Omset Hari Ini -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-indigo-500">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Total Omset Hari Ini</p>
+                    <h3 class="text-2xl font-bold text-gray-900" id="grandOmsetHariIni">Rp 0</h3>
+                    <p class="text-xs text-green-600 mt-2"><i class="fa-solid fa-arrow-trend-up"></i> Semua Cabang</p>
+                </div>
+                <!-- Total Omset Bulan Ini -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-blue-500">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Total Omset Bulan Ini</p>
+                    <h3 class="text-2xl font-bold text-gray-900" id="grandOmsetBulanIni">Rp 0</h3>
+                    <p class="text-xs text-blue-600 mt-2"><i class="fa-solid fa-calendar-check"></i> Semua Cabang</p>
+                </div>
+                <!-- Total Transaksi Hari Ini -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-orange-500">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Total Transaksi Hari Ini</p>
+                    <h3 class="text-2xl font-bold text-gray-900" id="grandTrxHariIni">0 Trx</h3>
+                    <p class="text-xs text-orange-600 mt-2"><i class="fa-solid fa-receipt"></i> Gabungan</p>
+                </div>
+                <!-- Arus Kas Bulan Ini -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-emerald-500">
+                    <p class="text-sm font-medium text-gray-500 mb-1">Total Arus Kas Masuk (Bulan)</p>
+                    <h3 class="text-2xl font-bold text-gray-900" id="grandKasMasukBulanIni">Rp 0</h3>
+                    <p class="text-xs text-emerald-600 mt-2"><i class="fa-solid fa-wallet"></i> Gabungan</p>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Rincian Per Cabang</h2>
+        <div id="branchesContainer" class="space-y-12">
+            <!-- Cabang cards will be injected here via JS -->
+        </div>
+
+    </main>
+
+    <script>
+        // --- UTILITAS ---
+        const formatRp = (angka) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        };
+
+        const updateTime = () => {
+            const now = new Date();
+            document.getElementById('currentTime').innerText = now.toLocaleDateString('id-ID', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+        };
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // --- DATA MOCKUP (Ganti ini dengan hasil fetch() dari API/Worker Anda) ---
+        // Struktur data yang ideal dikembalikan oleh Worker Dashboard Anda
+        const dashboardData = {
+            cabang: [
+                {
+                    id: "cabang-1",
+                    nama: "Cabang Pusat (Surabaya)",
+                    hariIni: {
+                        omset: 8500000,
+                        transaksi: 145,
+                        kasMasuk: 8500000,
+                        kasKeluar: 1200000,
+                        pembayaran: { cash: 2000000, qris: 4500000, transfer: 2000000 }
+                    },
+                    bulanIni: {
+                        omset: 210000000,
+                        kasMasuk: 210000000,
+                        kasKeluar: 45000000
+                    },
+                    grafikHari: {
+                        labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+                        data: [7.2, 6.8, 8.1, 7.5, 8.5, 10.2, 9.5] // dalam jutaan
+                    },
+                    grafikBulan: {
+                        labels: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags"],
+                        data: [150, 165, 180, 175, 190, 205, 200, 210] // dalam jutaan
+                    }
+                },
+                {
+                    id: "cabang-2",
+                    nama: "Cabang Sidoarjo",
+                    hariIni: {
+                        omset: 4200000,
+                        transaksi: 82,
+                        kasMasuk: 4200000,
+                        kasKeluar: 500000,
+                        pembayaran: { cash: 1500000, qris: 2000000, transfer: 700000 }
+                    },
+                    bulanIni: {
+                        omset: 95000000,
+                        kasMasuk: 95000000,
+                        kasKeluar: 15000000
+                    },
+                    grafikHari: {
+                        labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+                        data: [3.5, 3.8, 4.0, 3.2, 4.2, 5.5, 4.8] // dalam jutaan
+                    },
+                    grafikBulan: {
+                        labels: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags"],
+                        data: [70, 75, 82, 80, 85, 92, 88, 95] // dalam jutaan
+                    }
+                },
+                {
+                    id: "cabang-3",
+                    nama: "Intimedia",
+                    hariIni: {
+                        omset: 5800000,
+                        transaksi: 110,
+                        kasMasuk: 5800000,
+                        kasKeluar: 800000,
+                        pembayaran: { cash: 1800000, qris: 3000000, transfer: 1000000 }
+                    },
+                    bulanIni: {
+                        omset: 125000000,
+                        kasMasuk: 125000000,
+                        kasKeluar: 22000000
+                    },
+                    grafikHari: {
+                        labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+                        data: [4.5, 5.0, 4.8, 5.2, 5.8, 7.0, 6.5] // dalam jutaan
+                    },
+                    grafikBulan: {
+                        labels: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags"],
+                        data: [95, 100, 110, 105, 115, 120, 118, 125] // dalam jutaan
+                    }
+                }
+            ]
+        };
+
+        // --- RENDER LOGIC ---
+        function renderGrandSummary(data) {
+            let totalOmsetHariIni = 0;
+            let totalOmsetBulanIni = 0;
+            let totalTrxHariIni = 0;
+            let totalKasMasukBulan = 0;
+
+            data.cabang.forEach(c => {
+                totalOmsetHariIni += c.hariIni.omset;
+                totalOmsetBulanIni += c.bulanIni.omset;
+                totalTrxHariIni += c.hariIni.transaksi;
+                totalKasMasukBulan += c.bulanIni.kasMasuk;
+            });
+
+            document.getElementById('grandOmsetHariIni').innerText = formatRp(totalOmsetHariIni);
+            document.getElementById('grandOmsetBulanIni').innerText = formatRp(totalOmsetBulanIni);
+            document.getElementById('grandTrxHariIni').innerText = `${totalTrxHariIni} Trx`;
+            document.getElementById('grandKasMasukBulanIni').innerText = formatRp(totalKasMasukBulan);
+        }
+
+        function renderBranches(data) {
+            const container = document.getElementById('branchesContainer');
+            container.innerHTML = '';
+
+            data.cabang.forEach((cabang, index) => {
+                const totalPembayaran = cabang.hariIni.pembayaran.cash + cabang.hariIni.pembayaran.qris + cabang.hariIni.pembayaran.transfer;
+                const pctCash = ((cabang.hariIni.pembayaran.cash / totalPembayaran) * 100).toFixed(1);
+                const pctQris = ((cabang.hariIni.pembayaran.qris / totalPembayaran) * 100).toFixed(1);
+                const pctTransfer = ((cabang.hariIni.pembayaran.transfer / totalPembayaran) * 100).toFixed(1);
+
+                const html = `
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <!-- Card Header -->
+                        <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-store text-indigo-600 mr-2"></i> ${cabang.nama}</h3>
+                            <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Online</span>
+                        </div>
+                        
+                        <div class="p-6">
+                            <!-- Metrics Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                                
+                                <!-- Hari Ini -->
+                                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                                    <p class="text-sm text-indigo-600 font-semibold mb-3 border-b border-indigo-100 pb-2">HARI INI</p>
+                                    <div class="mb-2">
+                                        <p class="text-xs text-gray-500">Omset</p>
+                                        <p class="text-lg font-bold text-gray-900">${formatRp(cabang.hariIni.omset)}</p>
+                                    </div>
+                                    <div class="flex justify-between mt-3 bg-white p-2 rounded-lg border border-indigo-50">
+                                        <div>
+                                            <p class="text-[10px] text-gray-500 uppercase">Kas Masuk</p>
+                                            <p class="text-sm font-semibold text-green-600">${formatRp(cabang.hariIni.kasMasuk)}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-[10px] text-gray-500 uppercase">Kas Keluar</p>
+                                            <p class="text-sm font-semibold text-red-600">${formatRp(cabang.hariIni.kasKeluar)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Transaksi & Metode Bayar -->
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div class="flex justify-between items-end mb-3 border-b border-gray-200 pb-2">
+                                        <p class="text-sm text-gray-600 font-semibold">METODE BAYAR (HARI INI)</p>
+                                        <p class="text-sm font-bold bg-indigo-100 text-indigo-800 px-2 rounded">${cabang.hariIni.transaksi} Trx</p>
+                                    </div>
+                                    
+                                    <div class="space-y-2 mt-3">
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1">
+                                                <span class="text-gray-600">QRIS</span>
+                                                <span class="font-semibold text-gray-900">${formatRp(cabang.hariIni.pembayaran.qris)} (${pctQris}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" style="width: ${pctQris}%"></div></div>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1">
+                                                <span class="text-gray-600">Cash</span>
+                                                <span class="font-semibold text-gray-900">${formatRp(cabang.hariIni.pembayaran.cash)} (${pctCash}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-green-500 h-1.5 rounded-full" style="width: ${pctCash}%"></div></div>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between text-xs mb-1">
+                                                <span class="text-gray-600">Transfer</span>
+                                                <span class="font-semibold text-gray-900">${formatRp(cabang.hariIni.pembayaran.transfer)} (${pctTransfer}%)</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-purple-500 h-1.5 rounded-full" style="width: ${pctTransfer}%"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bulan Ini (Omset) -->
+                                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                    <p class="text-sm text-blue-600 font-semibold mb-3 border-b border-blue-100 pb-2">BULAN INI</p>
+                                    <div class="mb-2">
+                                        <p class="text-xs text-gray-500">Total Omset</p>
+                                        <p class="text-lg font-bold text-gray-900">${formatRp(cabang.bulanIni.omset)}</p>
+                                    </div>
+                                    <div class="flex justify-between mt-3 bg-white p-2 rounded-lg border border-blue-50">
+                                        <div>
+                                            <p class="text-[10px] text-gray-500 uppercase">Kas Masuk</p>
+                                            <p class="text-sm font-semibold text-green-600">${formatRp(cabang.bulanIni.kasMasuk)}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-[10px] text-gray-500 uppercase">Kas Keluar</p>
+                                            <p class="text-sm font-semibold text-red-600">${formatRp(cabang.bulanIni.kasKeluar)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mini Monthly Chart Canvas Area -->
+                                <div class="bg-white p-2 rounded-xl border border-gray-100 flex flex-col justify-center">
+                                     <p class="text-xs text-gray-500 text-center mb-1">Trend 7 Hari Terakhir</p>
+                                     <div class="h-24 w-full relative">
+                                        <canvas id="miniChart-${index}"></canvas>
+                                     </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700 mb-4 text-center">Grafik Omset Mingguan (Jutaan Rp)</p>
+                                    <div class="h-48 w-full">
+                                        <canvas id="chartHari-${index}"></canvas>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700 mb-4 text-center">Grafik Omset Bulanan 2026 (Jutaan Rp)</p>
+                                    <div class="h-48 w-full">
+                                        <canvas id="chartBulan-${index}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            // Initialize Charts after DOM injection
+            initCharts(data);
+        }
+
+        function initCharts(data) {
+            // Konfigurasi umum chart agar bersih dan seragam
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#6b7280';
+            Chart.defaults.scale.grid.color = '#f3f4f6';
+
+            data.cabang.forEach((cabang, index) => {
+                
+                // 1. Chart 7 Hari Terakhir (Main Line Chart)
+                const ctxHari = document.getElementById(`chartHari-${index}`).getContext('2d');
+                new Chart(ctxHari, {
+                    type: 'line',
+                    data: {
+                        labels: cabang.grafikHari.labels,
+                        datasets: [{
+                            label: 'Omset Harian',
+                            data: cabang.grafikHari.data,
+                            borderColor: '#4f46e5', // Indigo-600
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#4f46e5',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, border: {display: false} },
+                            x: { grid: {display: false}, border: {display: false} }
+                        }
+                    }
+                });
+
+                // 2. Chart Bulanan (Bar Chart)
+                const ctxBulan = document.getElementById(`chartBulan-${index}`).getContext('2d');
+                new Chart(ctxBulan, {
+                    type: 'bar',
+                    data: {
+                        labels: cabang.grafikBulan.labels,
+                        datasets: [{
+                            label: 'Omset Bulanan',
+                            data: cabang.grafikBulan.data,
+                            backgroundColor: '#3b82f6', // Blue-500
+                            borderRadius: 4,
+                            barPercentage: 0.6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, border: {display: false} },
+                            x: { grid: {display: false}, border: {display: false} }
+                        }
+                    }
+                });
+
+                // 3. Mini Sparkline Chart (Area Chart kecil)
+                const ctxMini = document.getElementById(`miniChart-${index}`).getContext('2d');
+                new Chart(ctxMini, {
+                    type: 'line',
+                    data: {
+                        labels: cabang.grafikHari.labels,
+                        datasets: [{
+                            data: cabang.grafikHari.data,
+                            borderColor: '#10b981', // Emerald
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            y: { display: false, beginAtZero: true },
+                            x: { display: false }
+                        },
+                        layout: { padding: 5 }
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Pada implementasi asli, ini adalah tempat Anda memanggil fetch()
+            // fetch('https://api-dashboard-owner.worker.dev/rekap')
+            //   .then(res => res.json())
+            //   .then(data => { renderGrandSummary(data); renderBranches(data); })
+            
+            // Menggunakan Data Mock
+            renderGrandSummary(dashboardData);
+            renderBranches(dashboardData);
+        });
+
+    </script>
+</body>
+</html>
