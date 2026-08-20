@@ -202,9 +202,10 @@
         function renderBranches(data) {
             const container = document.getElementById('branchesContainer');
             container.innerHTML = '';
-            const theme = themes[1 % themes.length];
+            
 
             data.cabang.forEach((cabang, index) => {
+                const theme = themes[index % themes.length];
                 const totalPembayaranHari = cabang.hariIni.pembayaran.cash + cabang.hariIni.pembayaran.qris + cabang.hariIni.pembayaran.transfer;
                 const pctCash = totalPembayaranHari > 0 ? ((cabang.hariIni.pembayaran.cash / totalPembayaranHari) * 100).toFixed(1) : 0;
                 const pctQris = totalPembayaranHari > 0 ? ((cabang.hariIni.pembayaran.qris / totalPembayaranHari) * 100).toFixed(1) : 0;
