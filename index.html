@@ -128,17 +128,19 @@
                 const totalPiutangBulan = cabang.bulanIni.piutang || 0;
 
                 // --- LOGIKA LIST 10 PRODUK ---
+                // --- LOGIKA LIST 10 PRODUK (DENGAN TOTAL HARGA) ---
                 let listProdukHTML = '';
                 if (cabang.topProduk && cabang.topProduk.length > 0) {
                     cabang.topProduk.forEach((prod, i) => {
                         listProdukHTML += `
                         <div class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-gray-100 shadow-sm">
-                            <span class="text-gray-700 font-medium text-sm truncate flex-1">
+                            <span class="text-gray-700 font-medium text-sm truncate flex-1 pr-2">
                                 <span class="text-gray-400 w-5 inline-block">${i + 1}.</span> ${prod.nama_produk}
                             </span>
-                            <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md text-xs whitespace-nowrap">
-                                ${prod.total_qty} qty
-                            </span>
+                            <div class="text-right whitespace-nowrap">
+                                <span class="font-bold text-gray-900 text-xs mr-2">${formatRp(prod.total_harga)}</span>
+                                <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-[11px]">${prod.total_qty} qty</span>
+                            </div>
                         </div>`;
                     });
                 } else {
