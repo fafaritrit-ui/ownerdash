@@ -455,29 +455,37 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Tampilkan tulisan Loading sementara data diambil
             document.getElementById('grandOmsetHariIni').innerText = "Loading...";
             document.getElementById('branchesContainer').innerHTML = '<p class="text-center text-gray-500 py-10">Mengambil data dari semua cabang...</p>';
 
-            // GANTI URL DI BAWAH INI DENGAN URL WORKER CLOUDFLARE ANDA YANG ASLI
-            const workerUrl = 'https://ownerdash.fafaritrit.workers.dev/'; 
+            const workerBaseUrl = 'https://ownerdash.fafaritrit.workers.dev/'; 
             
-            fetch(workerUrl)
-              .then(res => {
-                  if(!res.ok) throw new Error("Gagal terhubung ke server");
-                  return res.json();
-              })
-              .then(data => { 
-                  // Jika berhasil, render data asli
-                  renderGrandSummary(data); 
-                  renderBranches(data); 
-              })
-              .catch(err => {
-                  console.error("Error fetching data:", err);
-                  document.getElementById('branchesContainer').innerHTML = `<p class="text-center text-red-500 py-10">Terjadi kesalahan saat mengambil data: ${err.message}. Pastikan URL Worker sudah benar.</p>`;
-                  document.getElementById('grandOmsetHariIni').innerText = "Error";
-                  document.getElementById('grandOmsetBulanIni').innerText = "Error";
-              });
+            // Web meminta data ke worker 3 kali berturut-turut untuk masing-masing cabang
+            Promise.all([
+                fetch(workerBaseUrl + '?cabang=intimedia').then(res => res.json()),
+                fetch(workerBaseUrl + '?cabang=suci').then(res => res.json()),
+                fetch(workerBaseUrl + '?cabang=lamongan').then(res => res.json())
+            ])
+            .then(results => {
+                // Menyatukan ketiga hasil respons
+                const combinedData = { cabang: [] };
+                
+                results.forEach(res => {
+                    if (res.cabang && res.cabang.length > 0) {
+                        combinedData.cabang.push(res.cabang[0]);
+                    }
+                });
+                
+                // Merender UI seperti biasa
+                renderGrandSummary(combinedData); 
+                renderBranches(combinedData); 
+            })
+            .catch(err => {
+                console.error("Error fetching data:", err);
+                document.getElementById('branchesContainer').innerHTML = `<p class="text-center text-red-500 py-10">Terjadi kesalahan saat mengambil data. Pastikan URL Worker sudah benar.</p>`;
+                document.getElementById('grandOmsetHariIni').innerText = "Error";
+                document.getElementById('grandOmsetBulanIni').innerText = "Error";
+            });
         });
 
     </script>
